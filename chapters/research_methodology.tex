@@ -181,6 +181,13 @@ from the device located near the workstation. The devices
 were located as shown in the figure \ref{fig:floor_plan} and a number of
 tests were conducted using this setup.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{images/floor-plan.png}
+    \caption{The location of devices after rearrangement.}
+    \label{fig:floor_plan}
+\end{figure}
+
 While having that setup powered on and working for a couple of days, a new 
 problem appeared when one node was arbitrarily switched off. A lack of
 one router in the network broke an established routing. Although the problematic
@@ -257,7 +264,7 @@ uart$: ot macfilter addr add 0000000000000002
 Commands issued in the OpenThread shell cause a similar effect to a direct usage
 of an API in case of Zigbee.
 
-\subsection{Thread network setup automation}
+\section{Thread network setup automation}
 \label{sec:tests-automation}
 
 As a matter of Thread network being based on the CLI interface it was 
@@ -322,11 +329,20 @@ ot_config_schema = {
 }
 \end{lstlisting}
 
-\subsection{Tests results verification}
-\label{sec:test-results-verification}
-
-
-
 \medskip
 \section{Performance testing scenario}
 \label{sec:performance-testing-scenario}
+
+\medskip
+\section{Test results verification}
+\label{sec:test-results-verification}
+
+The performance metrics are computed and obtained from the nodes residing inside 
+the tested networks. It should not assumed that the results are legitimate without
+analyzing them externally. The Wireshark program was used to verify the correctness
+of gathered results. This method was used mainly during development of testing
+software to make sure the algorithm used for calculating the metrics was correct.
+
+
+
+
