@@ -166,28 +166,165 @@ network raises, the method stopped working as expected. Changing the
 transmitting power works for networks built with up to 4 devices. It becomes
 very hard to manage if the number of nodes exceeds that number.
 
-\subsection*{Rearranging devices inside the room and the building}
+\subsection*{Rearranging devices}
 Once the method of using different power settings of devices failed, the next
 idea was developed. The issue with the first attempt is that devices located
 in the same room are able to communicate with each other. Even though devices
 were located in different areas of the room and their transmission power was
 decreased, an unwanted direct links between nodes were established.
 
-It was decided to use separate rooms located on different floors to overcome
-that problem. It is worth to mention that at this stage of project, Zigbee 
+It was decided to put devices into separate rooms located on different floors to overcome that problem. It is worth to mention that at this stage of project, only Zigbee 
 networks were taken for the tests and a variety of modifications were introduced
 into the benchmark application (\ref{sec:benchmark-implementation}). An 
 established network was managed by the Benchmark commands sent to other nodes
-from the device whose location was the most suitable to work with. The devices
+from the device located near the workstation. The devices
 were located as shown in the figure \ref{fig:floor_plan} and a number of
-tests were conducted before the routing broke down from unknown reason.
+tests were conducted using this setup.
+
+While having that setup powered on and working for a couple of days, a new 
+problem appeared when one node was arbitrarily switched off. A lack of
+one router in the network broke an established routing. Although the problematic
+device had been switched on back again it was hard to rebuild the old network
+topology. This kind of issues enforced a change into the methodology of
+creating a network topology to more convenient and easier to manage.
 
 \subsection*{Modifying the software to limit visibility of certain devices}
+The described methods and their issues were finally 
+worked around using dedicated software configuration of each node. A general 
+concept was to limit the visibility of nodes not supposed to exchange data 
+with a chosen device.
 
+This method is based on  \textbf{filtering} the devices by their \textbf{IEEE address}.
+Zigbee, as well as Thread stack have an API designed especially for this case.
+Although long address is not used in every transmitted packet, filtering it
+at the stage of associating the device into the network is sufficient to filter
+out all unwanted packets.
 
-\subsection{Tests automation}
+In case of Zigbee, each device was assigned a long address at a compile time.
+A figure \ref{fig:long_address} shows the chosen addressing scheme. Listing 
+\ref{lst:zigbee-long-addresses} presents a piece of program where API
+for assigning and filtering out addresses is used.  Please note, that
+code which  is not not related to setting and filtering the long addresses was cut off the listing.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.32]{images/zigbee-ieee-address.drawio.png}
+    \caption{The Zigbee addressing scheme altogether with devices roles.}
+    \label{fig:long_address}
+\end{figure}
+
+\begin{lstlisting}[language=C, caption={An usage of the ZBOSS API for assigning and filtering long addresses}, label={lst:zigbee-long-addresses}]
+#define DEV_LONG_ADDR                    {0,0,0,0,0,0,0,1}
+#define NEIGHBOR1_LONG_ADDR              {0,0,0,0,0,0,0,2}
+
+zb_ieee_addr_t dev_long_addr = DEV_LONG_ADDR;
+zb_ieee_addr_t neighbor_long_addr = NEIGHBOR1_LONG_ADDR;
+
+/*  Macros, global variables and static functions declarations */
+
+void main(void) {
+    /* Initialization */
+
+    /* Assigning an IEEE address */
+    zb_set_long_address(dev_long_addr);
+
+    /* Filtering out all devices except the one with
+     * neighbor_long_addr assigned. */
+    mac_add_visible_device(neighbor_long_addr);
+
+    /* Enabling the application */
+}
+\end{lstlisting}
+
+Assigning and filtering out long addresses at a compile time requires to know
+them before the firmware is built and flashed onto boards. This was not 
+problematic in this case, but it is worth to consider to extend the 
+\textit{shell} subsystem with commands for performing these operations at 
+run-time.
+
+In case of OpenThread stack, options needed
+for long addresses management are built into its CLI subsystem. Addresses 
+assignment as well as filtering was done during device's setup by issuing
+certain commands. These are presented in the listing \ref{lst:thread-commands} 
+and the full process of preparing the network is covered by the section \ref{sec:tests-automation}.
+
+\begin{lstlisting}[language=bash, label={lst:thread-commands}, caption={Shell OpenThread commands for assigning and filtering IEEE addresses}]
+uart$: ot extaddr 0000000000000001
+uart$: ot macfilter addr allowlist
+uart$: ot macfilter addr add 0000000000000002
+\end{lstlisting}
+
+Commands issued in the OpenThread shell cause a similar effect to a direct usage
+of an API in case of Zigbee.
+
+\subsection{Thread network setup automation}
+\label{sec:tests-automation}
+
+As a matter of Thread network being based on the CLI interface it was 
+relatively easy to incorporate an automation in this field. Every step of 
+the network setup is covered by a single command issued to the device by the
+Python program. Devices are flashed with the same firmware and connected to
+the USB hub before the script is run. When the network is up and running,
+the nodes are ready to run performance tests, which is done manually.
+
+The Python script was created in relatively generic way enabling to work with
+any number of devices. It is based on loading the configuration files
+given by a command line parameters. These are then parsed accordingly to a fixed
+json schema (listing \ref{lst:json-schema}). It is required to bond a 
+configuration file with the board id, which is used by the script to find an 
+appropriate serial port to establish a connection with.
+
+\medskip
+\begin{lstlisting}[language=Python, label={lst:thread-automation-script}, caption={The main function of a script for Thread network setup}]
+def main():
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
+
+    configs = sys.argv[1:]
+    thread_devices = []
+
+    for config in configs:
+        if ".json" not in config:
+            logging.error(f"{config} is not a .json file")
+            exit(-1)
+
+    for config in configs:
+        thread_devices.append(ThreadDevice(config))
+
+    logging.info(f"Found {len(thread_devices)} Thread device(s)")
+    for dev in thread_devices:
+        logging.info(f"Setting up {dev}")
+        dev.device_setup()
+
+    for dev in thread_devices:
+        _ = input(f"Press any key to start {dev.config.board_id} on {dev._find_tty()}")
+        dev.network_up()
+\end{lstlisting}
+
+\medskip
+\begin{lstlisting}[language=Python, label={lst:json-schema}, caption={The json 
+schema used to parse boards configuration files.}]
+ot_config_schema = {
+    "type" : "object",
+    "properties" : {
+        "board_id" : {"type" : "number"},
+        "baudrate" : {"type" : "number"},
+        "panid" : {"type" : "string"},
+        "factoryreset" : {"type" : "boolean"},
+        "channel" :  {"type" : "number"},
+        "networkkey" : {"type" : "string"},
+        "extaddr" : {"type" : "string"},
+        "allowlist" : {
+            "type" : "array",
+            "items" : {"type": "string"}
+        },
+        "zperf_role" : {"enum" : ["client", "server"] }
+    }
+}
+\end{lstlisting}
 
 \subsection{Tests results verification}
+\label{sec:test-results-verification}
+
 
 
 \medskip
