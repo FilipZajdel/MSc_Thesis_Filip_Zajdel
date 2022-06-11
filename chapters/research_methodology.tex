@@ -1,42 +1,195 @@
-\section{Test setup}
 
-\subsection{Tools used for testing}
 
-\subsection*{Hardware}
- The platform chosen for test implementation was Nordic Semiconductor nRF52840. The SoC features 2.4 GHz 
+\section{Performance metrics}
+\label{sec:performance-metrics}
+\subsection*{Latency}
+
+The delay between packet's transmission from one node to another is one of the 
+most important network performance parameter. Although IEEE 802.15.4 networks are not
+designed for high data rates, the latency is a valuable metric which depends on a variety of 
+factors.
+
+The latency is computed as a half of Round Trip Time (RTT)- the full delay between sending the packet from one node and receiving it from the destination node. Figure \ref{fig:round_trip}  depicts the round trip of a packet.
+\vspace{2em}
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[scale=0.3]{images/rtt-diagram.png}
+    \caption{A packet's round trip}
+    \label{fig:round_trip}
+\end{figure}
+
+In this thesis, RTT was determined by the nodes using dedicated applications. These are described in 
+details in sections \ref{sec:benchmark} and \ref{sec:zperf}. Additionally, the RTT was selectively 
+calculated using packets timestamps from traffic dump collected with Wireshark (sec. 
+\ref{sec:benchmark}). However, the latter was used rarely and mainly for ensuring the
+calculations correctness performed by applications.
+
+One of aspects, which latency depends most on, is the network topology. In this thesis,
+the latency was measures in the relationship to the number of hops the packet must go through 
+from the sender node to the destination.
+
+Another factor affecting the time of packet delivery is length of sent payload data. 
+Experiments performed for this thesis used different lengths of data- from 0 to 79 
+bytes with interval of 12 bytes. This parameter has a direct impact on the packet's 
+time in the air. At this point, sending an empty payload (which length equals to 0 
+bytes) can seemingly be pointless. However, term \textbf{payload length} refers to the
+length of application's layer payload and shouldn't be confused with a IEEE 802.15.4 
+payload. That said, a packet carrying an empty payload can be valuable as well. An 
+exemplary use case for such a packet is sending a notification utilizing only an 
+application layer header without a payload.
+
+
+\subsection*{Throughput}
+
+The overall effective data transmission rate is referred as \textbf{throughput} and expressed in kilobits per second (\textbf{kbps}). In this project, throughput was calculated as a ratio of successfully exchanged data between the sender and received and the overall time of a single experiment. Each run of the experiment
+was approximately 10 seconds long and about 150 packets were transmitted from the sender. Figure \ref{fig:throughput} depicts the methodology of throughput calculation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{images/throughput-diagram.drawio.png}
+    \caption{An overall experiment time calculation.}
+    \label{fig:throughput}
+\end{figure}
+
+\section{Tools used for testing}
+
+\medskip
+
+
+\subsection{Hardware}
+ The platform chosen for test implementation was Nordic Semiconductor nRF52840. This SoC features 2.4 GHz 
  radio and supports a broad variety of wireless protocols. Except for the bare Soc intended to assembly in a 
- custom PCB, the device is manufactured in two main versions: nRF52840 DK, nRF52840 Dongle. Both of them were 
- utilized for the thesis.
+ custom PCB, the device is manufactured in two main versions: nRF52840 DK and nRF52840 Dongle. Both of them were 
+ utilized for this thesis.
  
- Mesh networks were deployed onto the set of 7 nrf52840 DK boards shown in the figure \ref{fig:test_boards}. All of the boards were supplied via USB cables and connected to the workstation.
+ Mesh networks were deployed onto the set of 7 nrf52840 DK boards shown in the figure \ref{fig:test_boards}. All devices were connected to the
+ workstation via USB cables.
 
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.3]{images/test_boards.png}
-    \caption{The test setup}
+    \caption{The nRF52840 DK.}
     \label{fig:test_boards}
 \end{figure}
 
-\subsection*{Benchmark application}
+\subsection{Benchmark application}
+\label{sec:benchmark}
 
-The most recent implementation of Zigbee and Thread protocols for nRF52840 are released as a components of nRF  
+The most recent implementation of Zigbee and Thread protocols for nRF52840 are shipped as a components of nRF
 Connect  SDK (abbreviated as \textbf{NCS}). The SDK does not feature any tool which can be used for 
-benchmarking Thread and Zigbee. However, such an application existed before- in the previous Nordic Semiconductor SDK (nRF5 SDK for Thread and Zigbee) and was called \textbf{benchmark}. When implementing tests, 
-the tool based on 
-\textbf{benchmark} was implemented and used to perform tests of a Zigbee network.
+benchmarking Thread and Zigbee. However, such an application existed before- in the previous Nordic Semiconductor SDK (nRF5 SDK for Thread and Zigbee) and was called \textbf{benchmark}. When implementing tests, the tool based on 
+\textbf{benchmark} was implemented and used to perform tests of a Zigbee network. The implementation details
+of the application are described in dedicated section \ref{sec:benchmark-implementation}.
 
-\subsection*{Zperf application}
+\subsection{Zperf application}
+\label{sec:zperf}
 
-Since Thread protocol is an Internet oriented protocol, an existing methodologies and tools could possibly be used to measure network performance. \textbf{Iperf} is one of the tools specialized in evaluating performance metrics. It was chosen as a basis, because it exists as a sample application for Zephyr RTOS. For this project, the RTT measurement for UDP based connections and support for Thread was added to the original application.
+Since Thread protocol is an Internet oriented protocol, an existing methodologies and tools could have possibly been used to measure network performance. \textbf{Iperf} is one of the tools created for evaluating performance metrics. A sample application implementing Iperf's API is available in Zephyr RTOS and is called \textbf{Zperf}. For this project, the RTT measurement for UDP based connections and support for Thread was added to the \textbf{Zperf} application. The implementation details of the Zperf application are described in a dedicated section \ref{sec:zperf-implementation}.
 
-\subsection{Tools used for diagnostics}
+\subsection{Other tools used for diagnostics}
+\label{sec:tools}
 
+The exploration of computer networks is usually done by eavesdropping the network link between entities. That kind of capturing packets is called \textbf{sniffing} and can be done by a special software. In this case, the traffic of Zigbee and Thread networks was sniffed by \textbf{Wireshark}. 
+
+Any software is not able to operate without a hardware. When IP networks are diagnosed, a network 
+interface card (either wired or wireless) available in any modern computer is utilized. Unfortunately, 
+sniffing IEEE 802.15.4 requires special network interface. In this thesis, nRF52840 Dongle flashed with 
+a dedicated firmware was used.
 
 \medskip
-\section{Performance metrics}
+\section{Test setup}
+\subsection{Network topology}
+\label{sec:network-topology}
+
+As mentioned in the section \ref{sec:performance-metrics}, both of the measures metrics are affected by
+the network topology. If the trip of the packet is followed, it is not surprising that the time of its 
+delivery between nodes is strictly bonded with the number of hops. The mesh networks routing is designed to deliver packets using the most efficient path. Although the routing algorithm differs between Zigbee and Thread,
+the general principle is similar. Routers choose the path to relay packets in such a way, the \textbf{cost}
+of the packets delivery is as small as possible. TODO: dać źródło!! That way of forming a network topology
+was one of the obstacles encountered during preparation for this project. An explanation and more detailed
+description can be found in section \ref{sec:problems-encountered}.
+
+The measurement of latency and throughput in reference to the number of hops requires the network topology
+to provide a deterministic number of hops between given nodes. It was decided to test the network performance
+against 1 to 6 hops. That need could be met only by introducing a network topology similar to \textbf{daisy 
+chain} where any node can have only 1 or 2 connections to the other nodes. Figure \ref{fig:daisy_chain} 
+presents the general idea of such a topology.
+
+\medskip
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{images/daisy-chain.png}
+    \caption{The daisy chain topology.}
+    \label{fig:daisy_chain}
+\end{figure}
+
+It is worth to mention that introduced topology is neither optimal nor energy 
+efficient for the devices in the network. Although, it's really hard to 
+establish a mesh network that would allow to measure performance in the relation
+to the number of hops. 
+
+Setting up a mesh network that would use the topology described above was one
+of the problems encountered during the test preparation and has been broadly
+described in section \ref{sec:problems-encountered}.
 
 \medskip
 \section{Problems encountered}
+\label{sec:problems-encountered}
+
+While developing the test methodology, especially the part consisting of
+setting up the network (\ref{sec:network-topology}), a number of problems 
+arose. A number of ways of solving them had been attempted before a satisfying 
+solution was found.
+
+\subsection{Enforcing the network topology}
+
+(TODO: Refer to the description of routing in Zigbee and Thread). The
+routing in mesh network is based on a cost of given paths, which 
+relates to the quality of wireless link between devices. This gives an 
+opportunity to build the network topology by tweaking the transmission power
+of devices. However, it is rarely possible to do so in practice, because 2.4GHz 
+band is broadly used by other electronic goods present around us (for example 
+WiFi access points, Bluetooth headphones etc.). Besides the crowded band, 
+furnishings and other equipment introduce interference compounding the link
+quality. Taking into account all of these factors, it's very hard to determine
+the right level of amplification of each device's transceiver suitable to create
+a given network topology, and especially the daisy chain.
+
+\subsection*{Using different levels of transmission power}
+Setting certain levels of transmission power was the first attempt
+to build the network required to conduct the tests. This method seemed to be the
+most appropriate for the networks which build their topology on the basis of
+the effectiveness of the link between nodes. At the early stage of experiment,
+the results were promising. However, as soon as the number of nodes in the 
+network raises, the method stopped working as expected. Changing the 
+transmitting power works for networks built with up to 4 devices. It becomes
+very hard to manage if the number of nodes exceeds that number.
+
+\subsection*{Rearranging devices inside the room and the building}
+Once the method of using different power settings of devices failed, the next
+idea was developed. The issue with the first attempt is that devices located
+in the same room are able to communicate with each other. Even though devices
+were located in different areas of the room and their transmission power was
+decreased, an unwanted direct links between nodes were established.
+
+It was decided to use separate rooms located on different floors to overcome
+that problem. It is worth to mention that at this stage of project, Zigbee 
+networks were taken for the tests and a variety of modifications were introduced
+into the benchmark application (\ref{sec:benchmark-implementation}). An 
+established network was managed by the Benchmark commands sent to other nodes
+from the device whose location was the most suitable to work with. The devices
+were located as shown in the figure \ref{fig:floor_plan} and a number of
+tests were conducted before the routing broke down from unknown reason.
+
+\subsection*{Modifying the software to limit visibility of certain devices}
+
+
+\subsection{Tests automation}
+
+\subsection{Tests results verification}
+
 
 \medskip
-\section{Performance testing}
+\section{Performance testing scenario}
+\label{sec:performance-testing-scenario}
