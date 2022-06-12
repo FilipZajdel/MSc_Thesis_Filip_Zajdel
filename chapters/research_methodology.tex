@@ -333,16 +333,103 @@ ot_config_schema = {
 \section{Performance testing scenario}
 \label{sec:performance-testing-scenario}
 
+
 \medskip
 \section{Test results verification}
 \label{sec:test-results-verification}
 
 The performance metrics are computed and obtained from the nodes residing inside 
-the tested networks. It should not assumed that the results are legitimate without
-analyzing them externally. The Wireshark program was used to verify the correctness
-of gathered results. This method was used mainly during development of testing
+the tested networks. It should not be assumed that the results are legitimate without
+analyzing them. The Wireshark program altogether with nRF 802.15.4 Sniffer were used for verification of the gathered results correctness. This method was used mainly during development of testing
 software to make sure the algorithm used for calculating the metrics was correct.
 
+\textit{Please note that despite benchmark verification is described in this section, zperf was tested using similar scenario.} The verification test run was executed in the following stages:
 
+\begin{enumerate}
+    \itemsep0em
+    \item Flash two nRF52840 DKs with benchmark software.
+    \item Start recording the network activity with Wireshark and nRF Sniffer.
+    \item Establish a Zigbee network consisting of newly flashed devices.
+    \item Configure the test run with the following parameters:
+    \begin{itemize}
+        \itemsep0em
+        \item Test mode: Echo
+        \item Packets count: 150
+        \item Packet length: 64 bytes 
+    \end{itemize}
+    \item Execute the test.
+    \item Compare the outcome calculated by benchmark with the results 
+    from Wireshark.
+\end{enumerate}
 
+The \ref{fig:verification} figure presents the setup used for the verification 
+altogether with annotated network addresses of devices in the Zigbee network.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{images/verification.png}
+    \caption{The network and workstation setup for test results verification.}
+    \label{fig:verification}
+\end{figure}
+
+When the test finished, benchmark gave results shown in the figure 
+\ref{fig:board_results} and the packet stream (shown in the fig. 
+\ref{fig:verification_wireshark}) was collected.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.75]{images/one-hop-w-throughput.jpg}
+    \caption{The results gathered computed by the benchmark.}
+    \label{fig:board_results}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4]{images/packet-stream.jpg}
+    \caption{A Wireshark output showing a fragment of the captured packet stream.}
+    \label{fig:verification_wireshark}
+\end{figure}
+
+A table containing the packets which comes as an output of Wireshark enables
+to compute a delay between packets. This is done by using timestamp values
+saved in the ``Time'' column. The difference between the transmission 
+timestamps of consecutive data packets is interpreted as the latency. 
+
+The packet dump was exported into the .csv file and loaded into a spreadsheet 
+for further analysis. Calculated latency measures for this run, alongside with
+benchmark results are shown in the table \ref{table:verification}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{Testing tool} & \multicolumn{3}{c|}{Latency} & \multirow{2}{*}{Throughput [kbps]}  \\\cline{2-4}
+
+                  & Average [ms] & Minimum [ms] & Maximum [ms]               &                   \\
+\hline
+Benchmark & $ 10.80 $  & $ 10.00 $ & $ 12.00 $   &      $22.00$              \\
+\hline
+Wireshark &  $11.01$ & $10.31$ & $12.76$      &      $22.70$  \\
+\hline
+\end{tabular}
+\caption{A comparison of latency and throughput measurements.}
+\label{table:verification}
+\end{table}
+
+The results shown differ for all metrics between the benchmark outcome and the 
+Wireshark output based calculations. These margins are caused mainly by 
+following factors:
+
+\begin{itemize}
+    \itemsep0em
+    \item The sniffer does not run the network stack which processes the packets before passing them to the application layer. Packets are delivered and marked with a timestamp as soon as they are received.
+    \item The sniffer is not located in the exact place as either of tested boards.
+    \item The latency in benchmark application is computed as a difference between the time when packet is scheduled to send by the stack and the time
+    of response reception. In the method utilizing packets sniffing, the latency
+    is expressed as a delay between consecutive packets with data. The difference can come from a time needed by the stack to process the scheduled packet.
+\end{itemize}
+
+After summing up above factors, the results yield by the benchmark application
+were considered valid and the software was allowed for future use for Zigbee 
+performance evaluation. A similar analysis had been conducted for zperf 
+application and similar results were obtained. 
