@@ -34,6 +34,10 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{blindtext}
 
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{csvsimple}
+
 \input{config.tex}
 
 \bibliographystyle{abbrv}
@@ -61,14 +65,25 @@
 \label{chap:introduction}
 \input{chapters/introduction}
 
+\indianachapter{Fundamentals of mesh networking protocols}
+\label{chap:fundamentals}
+\input{chapters/fundamentals}
 
 \indianachapter{Research methodology}
 \label{chap:research_methodology}
 \input{chapters/research_methodology}
 
+\indianachapter{Results analysis}
+\label{chap:results}
+\input{chapters/results}
+
+\indianachapter{Conclusions}
+\label{chap:conclusions}
+\input{chapters/conslusions}
+
 \clearpage
 \begin{appendices}
-\indianachapter{Appendix}
+\indianachapter{Full latency measurements results}
 \label{appendix}
 \input{chapters/appendix}
 \end{appendices}

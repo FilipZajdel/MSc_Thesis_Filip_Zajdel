@@ -5,7 +5,7 @@
 \subsection*{Latency}
 
 The delay between packet's transmission from one node to another is one of the 
-most important network performance parameter. Although IEEE 802.15.4 networks are not
+most crucial network performance parameters. Although IEEE 802.15.4 networks are not
 designed for high data rates, the latency is a valuable metric which depends on a variety of 
 factors.
 
@@ -30,14 +30,13 @@ the latency was measures in the relationship to the number of hops the packet mu
 from the sender node to the destination.
 
 Another factor affecting the time of packet delivery is length of sent payload data. 
-Experiments performed for this thesis used different lengths of data- from 0 to 79 
-bytes with interval of 12 bytes. This parameter has a direct impact on the packet's 
+Experiments performed for this thesis used different lengths of data- from 0 to 72 bytes. This parameter has a direct impact on the packet's 
 time in the air. At this point, sending an empty payload (which length equals to 0 
 bytes) can seemingly be pointless. However, term \textbf{payload length} refers to the
-length of application's layer payload and shouldn't be confused with a IEEE 802.15.4 
+length of data sent through an application layer and shouldn't be confused with a IEEE 802.15.4 
 payload. That said, a packet carrying an empty payload can be valuable as well. An 
 exemplary use case for such a packet is sending a notification utilizing only an 
-application layer header without a payload.
+application layer header without any payload.
 
 
 \subsection*{Throughput}
@@ -106,7 +105,7 @@ As mentioned in the section \ref{sec:performance-metrics}, both of the measures 
 the network topology. If the trip of the packet is followed, it is not surprising that the time of its 
 delivery between nodes is strictly bonded with the number of hops. The mesh networks routing is designed to deliver packets using the most efficient path. Although the routing algorithm differs between Zigbee and Thread,
 the general principle is similar. Routers choose the path to relay packets in such a way, the \textbf{cost}
-of the packets delivery is as small as possible. TODO: dać źródło!! That way of forming a network topology
+of the packets delivery is as small as possible \cite{TexasZigbeeVsThread}. That way of forming a network topology
 was one of the obstacles encountered during preparation for this project. An explanation and more detailed
 description can be found in section \ref{sec:problems-encountered}.
 
@@ -144,7 +143,7 @@ solution was found.
 
 \subsection{Enforcing the network topology}
 
-(TODO: Refer to the description of routing in Zigbee and Thread). The
+The
 routing in mesh network is based on a cost of given paths, which 
 relates to the quality of wireless link between devices. This gives an 
 opportunity to build the network topology by tweaking the transmission power
@@ -196,6 +195,7 @@ topology. This kind of issues enforced a change into the methodology of
 creating a network topology to more convenient and easier to manage.
 
 \subsection*{Modifying the software to limit visibility of certain devices}
+\label{sec:modifying_visibility}
 The described methods and their issues were finally 
 worked around using dedicated software configuration of each node. A general 
 concept was to limit the visibility of nodes not supposed to exchange data 
@@ -330,9 +330,110 @@ ot_config_schema = {
 \end{lstlisting}
 
 \medskip
-\section{Performance testing scenario}
+\section{Performance evaluation procedure}
 \label{sec:performance-testing-scenario}
 
+\subsection{Zigbee evaluation}
+
+The evaluation process begins with setting up the Zigbee network. Devices
+used to test are flashed with the firmware modified as described
+in \ref{sec:modifying_visibility} to establish a desired topology. Once the 
+network is ready, nodes eligible to take part in the test are discovered by
+issuing a benchmark command on one of the border devices:
+\begin{lstlisting}
+uart$: test peer discover
+\end{lstlisting}
+
+\noindent As a result of this command, a list of devices shows up (figure \ref{fig:discovered_zigbee_devices}).
+\begin{figure}[H]
+    \centering
+    \includegraphics{images/benchmark-devices.jpg}
+    \caption{A result of peer discovery command.}
+    \label{fig:discovered_zigbee_devices}
+\end{figure}
+
+In the next step, a node from the peers listed in \ref{fig:discovered_zigbee_devices} is 
+chosen:
+\begin{lstlisting}
+uart$: test peer select 1
+\end{lstlisting}
+
+Then the test configuration is chosen. In the majority of tests executed for the project, tests 
+were configured to exchange 150 packets in the mode echo. The length 
+of the data was changed in the consecutive tests to cover different cases.
+\begin{lstlisting}
+uart$: test configure mode echo
+uart$: test configure length 64
+uart$: test configure count 150
+\end{lstlisting}
+
+The final step is to run the test and wait until it finishes.
+\begin{lstlisting}
+uart$: test start
+\end{lstlisting}
+
+The command line remains frozen for the time of test execution. As soon as the test
+ends, the results are given and the command line is unblocked. An exemplary test results
+are presented in fig. \ref{fig:zigbee_test_results}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{images/zigbee-test-result.jpg}
+    \caption{Zigbee benchmark test results.}
+    \label{fig:zigbee_test_results}
+\end{figure}
+
+\subsection{Thread evaluation}
+
+Thread evaluation process is started with setting up the Thread network as
+section \ref{sec:tests-automation} describes. As a next step, the node chosen 
+to perform tests with is set up as a zperf server. Zperf needs to be configured 
+with an ip address of a node:
+
+\begin{lstlisting}[label={lst:setting_zperf}]
+uart$: ot ipaddr
+fdde:ad00:beef:0:0:ff:fe00:0
+fdde:ad00:beef:0:558:f56b:d688:799
+fe80:0:0:0:f3d9:2a82:c8d8:fe43
+Done
+uart$: zperf setip fdde:ad00:beef:0:558:f56b:d688:799 64
+Done
+\end{lstlisting}
+
+Then, udp server is started:
+
+\begin{lstlisting}
+uart$: zperf udp download 5001 
+\end{lstlisting}
+
+Finally, another node is configured with ip address as well and starts 
+uploading the data onto the previously configured server node:
+\begin{lstlisting}
+uart$: ot ipaddr
+fdde:ad00:beef:0:0:ff:fe00:0
+fdde:ad00:beef:0:558:f56b:d682:795
+fe80:0:0:0:f3d9:2a82:c8d8:fe43
+Done
+uart$: zperf setip fdde:ad00:beef:0:558:f56b:d682:795 64
+Done
+uart$: zperf udp upload fdde:ad00:beef:0:558:f56b:d688:799 5001 10 50 1M
+\end{lstlisting}
+
+The command line is frozen for the time of test execution. At the end of
+run, results show up in the output of both devices.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[]{images/zperf-client.jpg}
+    \caption{Results on the client side.}
+    \label{fig:zperf_client_results}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[]{images/zperf-server.jpg}
+    \caption{Results on the server side}
+    \label{fig:zperf_server_results}
+\end{figure}
 
 \medskip
 \section{Test results verification}
