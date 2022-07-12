@@ -19,18 +19,19 @@ The latency is computed as a half of Round Trip Time (RTT)- the full delay betwe
     \label{fig:round_trip}
 \end{figure}
 
-In this thesis, RTT was determined by the nodes using dedicated applications. These are described in 
-details in sections \ref{sec:benchmark} and \ref{sec:zperf}. Additionally, the RTT was selectively 
+In this thesis, RTT was determined by dedicated applications running on a nodes in the
+network (either Zigbee or Thread). Additionally, the RTT was selectively 
 calculated using packets timestamps from traffic dump collected with Wireshark (sec. 
 \ref{sec:benchmark}). However, the latter was used rarely and mainly for ensuring the
-calculations correctness performed by applications.
+calculations correctness performed by applications. These are described in 
+details in sections \ref{sec:benchmark} and \ref{sec:zperf}.
 
 One of aspects, which latency depends most on, is the network topology. In this thesis,
 the latency was measures in the relationship to the number of hops the packet must go through 
 from the sender node to the destination.
 
 Another factor affecting the time of packet delivery is length of sent payload data. 
-Experiments performed for this thesis used different lengths of data- from 0 to 72 bytes. This parameter has a direct impact on the packet's 
+Experiments performed for this thesis used different lengths of data- from 0 to 79 bytes. This parameter has a direct impact on the packet's 
 time in the air. At this point, sending an empty payload (which length equals to 0 
 bytes) can seemingly be pointless. However, term \textbf{payload length} refers to the
 length of data sent through an application layer and shouldn't be confused with a IEEE 802.15.4 
@@ -68,7 +69,7 @@ was approximately 10 seconds long and about 150 packets were transmitted from th
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.3]{images/test_boards.png}
-    \caption{The nRF52840 DK.}
+    \caption{The nRF52840 DK, from nordicsemi.com.}
     \label{fig:test_boards}
 \end{figure}
 
@@ -78,13 +79,17 @@ was approximately 10 seconds long and about 150 packets were transmitted from th
 The most recent implementation of Zigbee and Thread protocols for nRF52840 are shipped as a components of nRF
 Connect  SDK (abbreviated as \textbf{NCS}). The SDK does not feature any tool which can be used for 
 benchmarking Thread and Zigbee. However, such an application existed before- in the previous Nordic Semiconductor SDK (nRF5 SDK for Thread and Zigbee) and was called \textbf{benchmark}. When implementing tests, the tool based on 
-\textbf{benchmark} was implemented and used to perform tests of a Zigbee network. The implementation details
-of the application are described in dedicated section \ref{sec:benchmark-implementation}.
+it was implemented and used to perform tests of a Zigbee network.
+
+\subsection*{Benchmark implementation details}
+
 
 \subsection{Zperf application}
 \label{sec:zperf}
 
-Since Thread protocol is an Internet oriented protocol, an existing methodologies and tools could have possibly been used to measure network performance. \textbf{Iperf} is one of the tools created for evaluating performance metrics. A sample application implementing Iperf's API is available in Zephyr RTOS and is called \textbf{Zperf}. For this project, the RTT measurement for UDP based connections and support for Thread was added to the \textbf{Zperf} application. The implementation details of the Zperf application are described in a dedicated section \ref{sec:zperf-implementation}.
+Since Thread protocol is an Internet oriented protocol, an existing methodologies and tools could have possibly been used to measure network performance. \textbf{Iperf} is one of the tools created for evaluating performance metrics. A sample application implementing Iperf's API is available in Zephyr RTOS and is called \textbf{Zperf}. For this project, the RTT measurement for UDP based connections and support for Thread was added to the \textbf{Zperf} application.
+
+\subsection*{Zperf implementation details}
 
 \subsection{Other tools used for diagnostics}
 \label{sec:tools}
@@ -163,7 +168,10 @@ the effectiveness of the link between nodes. At the early stage of experiment,
 the results were promising. However, as soon as the number of nodes in the 
 network raises, the method stopped working as expected. Changing the 
 transmitting power works for networks built with up to 4 devices. It becomes
-very hard to manage if the number of nodes exceeds that number.
+very hard to manage if the number of nodes exceeds that number. That limitations come
+from the nature of 2.4 GHz band is sensitive for interference. These are caused by
+furniture, the location of radio transceivers and even people moving by. It is hard
+to determine an appropriate power level for such a sensitive band.
 
 \subsection*{Rearranging devices}
 Once the method of using different power settings of devices failed, the next
@@ -174,7 +182,7 @@ decreased, an unwanted direct links between nodes were established.
 
 It was decided to put devices into separate rooms located on different floors to overcome that problem. It is worth to mention that at this stage of project, only Zigbee 
 networks were taken for the tests and a variety of modifications were introduced
-into the benchmark application (\ref{sec:benchmark-implementation}). An 
+into the benchmark application (\ref{sec:benchmark}). An 
 established network was managed by the Benchmark commands sent to other nodes
 from the device located near the workstation. The devices
 were located as shown in the figure \ref{fig:floor_plan} and a number of
@@ -182,7 +190,7 @@ tests were conducted using this setup.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.3]{images/floor-plan.png}
+    \includegraphics[scale=0.3]{images/floor_plan2.png}
     \caption{The location of devices after rearrangement.}
     \label{fig:floor_plan}
 \end{figure}

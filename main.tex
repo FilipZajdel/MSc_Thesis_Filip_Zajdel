@@ -37,23 +37,27 @@
 \usepackage{multicol}
 \usepackage{multirow}
 \usepackage{csvsimple}
+\usepackage{pdfpages}
 
 \input{config.tex}
 
 \bibliographystyle{abbrv}
 
 \title{Title}
-\author{Aleksandra Pestka}
+\author{Filip Zajdel}
 \date{2022}
 
 \begin{document}
 \input{titlepage}
-\selectlanguage{polish}
-\input{chapters/00disclaimer}
+
+% \includepdf{chapters/strona-tytulowa.pdf}
+
+% \selectlanguage{polish}
+% \input{chapters/00disclaimer}
 \selectlanguage{english}
 \input{chapters/abstract}
-\selectlanguage{polish}
-\input{chapters/streszczenie}
+% \selectlanguage{polish}
+% \input{chapters/streszczenie}
 \selectlanguage{english}
 \input{chapters/acknowledgements}
 \setcounter{tocdepth}{1}
